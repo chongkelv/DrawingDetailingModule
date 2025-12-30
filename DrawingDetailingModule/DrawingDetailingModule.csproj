@@ -63,8 +63,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Constants\UsageTrackingConstants.cs" />
     <Compile Include="Controller\Control.cs" />
     <Compile Include="Main\MyProgram.cs" />
+    <Compile Include="Model\ApiUsageRecord.cs" />
     <Compile Include="Model\AskBoundingBox.cs" />
     <Compile Include="Model\CounterSunk.cs" />
     <Compile Include="Model\GetBoundingBoxInfo.cs" />
@@ -78,6 +80,7 @@
     <Compile Include="Model\MyFeature.cs" />
     <Compile Include="Model\MyHoleFeature.cs" />
     <Compile Include="Model\MyPocketFeature.cs" />
+    <Compile Include="Model\ProjectInfoModel.cs" />
     <Compile Include="Model\ReamCounterbore.cs" />
     <Compile Include="Model\ReamSimpleHole.cs" />
     <Compile Include="Model\NXDrawing.cs" />
@@ -94,6 +97,10 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Services\CsvUsageTrackingService.cs" />
+    <Compile Include="Services\IUsageTrackingService.cs" />
+    <Compile Include="Services\ProjectInfoService.cs" />
+    <Compile Include="Services\UsageTracker.cs" />
     <Compile Include="View\FormDrawingDetailing.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -119,5 +126,6 @@
   <ItemGroup>
     <None Include="Resources\Icon.ico" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -4,10 +4,12 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Net.Mail;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using DrawingDetailingModule.Controller;
+using DrawingDetailingModule.Model;
 
 namespace DrawingDetailingModule.View
 {
@@ -75,10 +77,11 @@ namespace DrawingDetailingModule.View
             }
             catch (Exception err)
             {
-                control.GetDrawing.ShowMessageBox(
+                NXDrawing.ShowMessageBox(
+                    $"You have accidentaly click the button twice.\n Here is the error message: {err.Message}.",
                     "Error", 
-                    NXOpen.NXMessageBox.DialogType.Error, 
-                    $"You have accidentaly click the button twice.\n Here is the error message: {err.Message}.");
+                    NXOpen.NXMessageBox.DialogType.Error
+                    );
             }
         }
 

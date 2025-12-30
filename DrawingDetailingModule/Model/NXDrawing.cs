@@ -43,6 +43,7 @@ namespace DrawingDetailingModule.Model
         }
         public bool IsFaceSelected => selectedBody.Count > 0;
         public bool IsPointLocated => locatedPoint.Count > 0;
+        public string PartName { get; }
 
         public NXDrawing()
         {
@@ -59,6 +60,8 @@ namespace DrawingDetailingModule.Model
             locatedPoint = new List<Point3d>();
 
             this.control = control;
+
+            PartName = workPart.Name;
         }
 
         public List<TaggedObject> SelectBody()
@@ -72,9 +75,6 @@ namespace DrawingDetailingModule.Model
             bool keepHighlighted = false;
             bool includeFeature = false;
             Point3d cursor;
-
-            //var dimMask = new Selection.MaskTriple(NXOpen.UF.UFConstants.UF_solid_type, UFConstants.UF_solid_face_subtype, UFConstants.UF_UI_SEL_FEATURE_ANY_FACE);
-            //var dimMask = new Selection.MaskTriple(NXOpen.UF.UFConstants.UF_datum_plane_type, UFConstants.UF_solid_body_subtype, UFConstants.UF_UI_DATUM_PLANE);
 
             var dimMask = new Selection.MaskTriple(NXOpen.UF.UFConstants.UF_solid_type, UFConstants.UF_solid_body_subtype, UFConstants.UF_UI_SEL_FEATURE_BODY);
             Selection.MaskTriple[] maskArray = new Selection.MaskTriple[] { dimMask };
@@ -434,15 +434,16 @@ namespace DrawingDetailingModule.Model
             if (isNoCompnent)
             {
                 message += " you are not open any drawings yet! ;-)";
-                ShowMessageBox(title, msgboxType, message);
+                ShowMessageBox(message, title, msgboxType);
                 return false;
             }
 
             return true;
         }
 
-        public void ShowMessageBox(string title, NXMessageBox.DialogType msgboxType, string message)
+        public static void ShowMessageBox(string message, string title, NXMessageBox.DialogType msgboxType)
         {
+            UI ui = UI.GetUI();
             ui.NXMessageBox.Show(title, msgboxType, message);
         }
 
