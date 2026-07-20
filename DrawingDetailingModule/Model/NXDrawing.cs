@@ -458,6 +458,12 @@ namespace DrawingDetailingModule.Model
             lw.WriteLine(message);
         }
 
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteDebugToListingWindow(string message)
+        {
+            WriteToListingWindow(message);
+        }
+
         private string GetTypeFromAttr(AttributeIterator attItr, Feature feature)
         {
             if (feature.HasUserAttribute(attItr))

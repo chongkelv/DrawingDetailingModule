@@ -49,7 +49,7 @@ namespace DrawingDetailingModule.Model
             }
 
             string sketchName = sketchFeat.GetFeatureName();
-            NXDrawing.WriteToListingWindow($"WCPocketFeature: resolved profile sketch = \"{sketchName}\"");
+            NXDrawing.WriteDebugToListingWindow($"WCPocketFeature: resolved profile sketch = \"{sketchName}\"");
 
             Sketch sketch = realSketchFeat.Sketch;
             Point3d origin = sketch.Origin;
@@ -93,7 +93,7 @@ namespace DrawingDetailingModule.Model
             double centerU = (minU + maxU) / 2.0;
             double centerV = (minV + maxV) / 2.0;
 
-            NXDrawing.WriteToListingWindow($"WCPocketFeature: profile center (local uv) = ({centerU:F3}, {centerV:F3})");
+            NXDrawing.WriteDebugToListingWindow($"WCPocketFeature: profile center (local uv) = ({centerU:F3}, {centerV:F3})");
 
             double nearestU = double.MaxValue;
             bool found = false;
@@ -138,7 +138,7 @@ namespace DrawingDetailingModule.Model
                 origin.Z + finalU * xAxis[2] + finalV * yAxis[2]
             );
 
-            NXDrawing.WriteToListingWindow($"WCPocketFeature: WC start point = ({finalPoint.X:F3}, {finalPoint.Y:F3}, {finalPoint.Z:F3})");
+            NXDrawing.WriteDebugToListingWindow($"WCPocketFeature: WC start point = ({finalPoint.X:F3}, {finalPoint.Y:F3}, {finalPoint.Z:F3})");
 
             // A valid WC start point sits in the pocket cavity the wirecut removes, not in solid
             // material - so it must land OUTSIDE the part body, not inside it.

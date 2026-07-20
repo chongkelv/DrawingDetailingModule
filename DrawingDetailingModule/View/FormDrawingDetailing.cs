@@ -22,6 +22,8 @@ namespace DrawingDetailingModule.View
             InitializeComponent();
             this.control = control;
             InitNumFontSizeUpDownValue(control.GetDimensionTextSize);
+            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            this.Text = $"Drawing Detailing Form - Version {version.Major}.{version.Minor}.{version.Build}";
         }
 
         private void InitNumFontSizeUpDownValue(Func<int> getDimensionTextSize)
