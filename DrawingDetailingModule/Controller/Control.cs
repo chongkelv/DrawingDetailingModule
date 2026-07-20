@@ -1,11 +1,11 @@
-﻿using DrawingDetailingModule.Model;
+﻿using DrawingDetailingModule.Constants;
+using DrawingDetailingModule.Model;
 using DrawingDetailingModule.Services;
 using DrawingDetailingModule.View;
+using NXOpen;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace DrawingDetailingModule.Controller
 {
@@ -13,15 +13,12 @@ namespace DrawingDetailingModule.Controller
     {
         NXDrawing drawing;
         FormDrawingDetailing myForm;
-        private DateTime sessionStartTime;
-        private int numberOfDescriptionsGenerated = 0;
 
         public NXDrawing GetDrawing => drawing;
         public FormDrawingDetailing GetForm => myForm;
 
         public Control()
         {
-            sessionStartTime = DateTime.Now;
             drawing = new NXDrawing(this);
 
             if (!drawing.IsDrawingOpen())
@@ -35,81 +32,66 @@ namespace DrawingDetailingModule.Controller
 
         public void Start()
         {
+            double currentTextSize = GetDrawing.GetCurrentTextSize();
+            GetDrawing.SetTextSize(myForm.FontSize);
+            Stopwatch stopwatch = Stopwatch.StartNew();
             try
-            {                
-                double currentTextSize = GetDrawing.GetCurrentTextSize();
-                GetDrawing.SetTextSize(myForm.FontSize);
-                List<MachiningDescriptionModel> descriptionModels = new List<MachiningDescriptionModel>();
+            {
+                List<MachiningDescriptionModel> descriptionModels;
                 try
                 {
                     descriptionModels = GetDrawing.IterateFeatures();
-                    numberOfDescriptionsGenerated = descriptionModels.Count;
                     GetDrawing.CreateTable(GetDrawing.LocatedPoint[0], descriptionModels);
                     GetDrawing.GenerateWCStartPoints(descriptionModels);
                 }
                 catch (Exception err)
                 {
+                    NXDrawing.WriteToListingWindow("=== DrawingDetailingModule error ===");
+                    NXDrawing.WriteToListingWindow(err.ToString());
                     NXDrawing.ShowMessageBox($"Error detail: {err.Message}", "Error", NXOpen.NXMessageBox.DialogType.Error);
+                    return; // Do not log usage on failure
                 }
-                GetDrawing.SetTextSize(currentTextSize);
 
-                // Log sucessful usage with meaningful data
-                LogSuccessfulUsage();
+                stopwatch.Stop();
+                LogSuccessfulUsage(descriptionModels.Count, stopwatch.Elapsed.TotalSeconds);
             }
-            catch (Exception ex)
+            finally
             {
-                // Log error usage
-                UsageTracker.LogError("DrawingDetailingModule", ex);
-                throw; // Re-throw to maintain original behavior                    
+                GetDrawing.SetTextSize(currentTextSize);
             }
         }
 
-        private void LogSuccessfulUsage()
+        private void LogSuccessfulUsage(int descriptionsGenerated, double actualDurationSeconds)
         {
             try
             {
-                var duration = DateTime.Now - sessionStartTime;
-                string partName = GetDrawing.PartName ?? "Unknown";
+                Part workPart = GetDrawing.WorkPart;
+                string designer = AttributeManagerService.GetDesignBy(workPart);
+                double manualTime = descriptionsGenerated * UsageTrackingConstants.MANUAL_TIME_PER_DESCRIPTION_SECONDS;
 
-                var record = new ApiUsageRecord
+                var record = new DrawingDetailingUsageRecord
                 {
-                    ApiName = "DrawingDetailingModule",
-                    EngineerName = GetEngineerName(),
+                    ApiName = UsageTrackingConstants.API_NAME,
+                    EngineerName = !string.IsNullOrEmpty(designer) ? designer : Environment.UserName,
                     Version = GetApiVersion(),
                     UsedTime = DateTime.Now,
                     ComputerName = Environment.MachineName,
-                    SessionId = GetSessionId(),
-                    Duration = duration,
+                    SessionId = UsageTracker.SessionId,
                     Status = "Success",
-                    Message = $"Drawings name: {partName}",
-                    NumberOfDescriptionsGenerated = numberOfDescriptionsGenerated
+                    ManualTimeSeconds = manualTime,
+                    ActualDurationSeconds = actualDurationSeconds,
+                    TimeSavingSeconds = manualTime - actualDurationSeconds,
+                    DescriptionsGenerated = descriptionsGenerated,
+                    ModelName = AttributeManagerService.GetModelName(workPart) ?? "",
+                    PartName = AttributeManagerService.GetPartName(workPart) ?? ""
                 };
 
-                UsageTracker.Service.LogUsage(record);
+                UsageTracker.LogUsage(record);
             }
             catch
             {
                 // Silent fail - don't disrupt main functionality
             }
-        }
-
-        private string GetEngineerName()
-        {
-            try
-            {
-                // Try to get designer name from project info file first
-                var projectInfo = ProjectInfoService.ReadFromFile();
-                if (!string.IsNullOrEmpty(projectInfo.Designer))
-                {
-                    return projectInfo.Designer;
-                }
-            }
-            catch
-            {
-                // Fallback to environment if project info unavailable
-            }
-
-            return Environment.UserName;
         }
 
         private string GetApiVersion()
@@ -123,14 +105,6 @@ namespace DrawingDetailingModule.Controller
             {
                 return "1.1.0.0";
             }
-        }
-
-        private string GetSessionId()
-        {
-            // Use the same session ID as the tracking service for consistency
-            return UsageTracker.Service.GetType()
-                .GetField("SessionId", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
-                ?.GetValue(null)?.ToString() ?? Guid.NewGuid().ToString();
         }
 
         public int GetDimensionTextSize()

@@ -44,6 +44,7 @@ namespace DrawingDetailingModule.Model
         public bool IsFaceSelected => selectedBody.Count > 0;
         public bool IsPointLocated => locatedPoint.Count > 0;
         public string PartName { get; }
+        public Part WorkPart => workPart;
 
         public NXDrawing()
         {
@@ -445,6 +446,16 @@ namespace DrawingDetailingModule.Model
         {
             UI ui = UI.GetUI();
             ui.NXMessageBox.Show(title, msgboxType, message);
+        }
+
+        public static void WriteToListingWindow(string message)
+        {
+            ListingWindow lw = Session.GetSession().ListingWindow;
+            if (!lw.IsOpen)
+            {
+                lw.Open();
+            }
+            lw.WriteLine(message);
         }
 
         private string GetTypeFromAttr(AttributeIterator attItr, Feature feature)

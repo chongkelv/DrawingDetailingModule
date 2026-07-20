@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using DrawingDetailingModule.Model;
+using System;
 
 namespace DrawingDetailingModule.Services
 {
@@ -14,16 +11,16 @@ namespace DrawingDetailingModule.Services
         private static readonly Lazy<IUsageTrackingService> _service
             = new Lazy<IUsageTrackingService>(() => new CsvUsageTrackingService());
 
+        public static string SessionId => CsvUsageTrackingService.SessionId;
+
         /// <summary>
-        /// Logs API error with exception details
+        /// Logs API usage. Never throws - failures here must not disrupt main functionality.
         /// </summary>
-        /// <param name="apiName">Name of the API</param>
-        /// <param name="exception">Exception that occurred</param>
-        public static void LogError(string apiName, Exception exception)
+        public static void LogUsage(DrawingDetailingUsageRecord record)
         {
             try
             {
-                _service.Value.LogError(apiName, exception);
+                _service.Value.LogUsage(record);
             }
             catch
             {

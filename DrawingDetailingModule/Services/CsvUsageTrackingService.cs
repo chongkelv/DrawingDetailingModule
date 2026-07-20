@@ -1,12 +1,7 @@
-﻿using DrawingDetailingModule.Constants;
+using DrawingDetailingModule.Constants;
 using DrawingDetailingModule.Model;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DrawingDetailingModule.Services
 {
@@ -15,10 +10,9 @@ namespace DrawingDetailingModule.Services
     /// </summary>
     public class CsvUsageTrackingService : IUsageTrackingService
     {
-        private static readonly string SessionId = Guid.NewGuid().ToString();
-        private static readonly Stopwatch SessionStopwatch = Stopwatch.StartNew();
+        public static readonly string SessionId = Guid.NewGuid().ToString();
 
-        public void LogUsage(ApiUsageRecord record)
+        public void LogUsage(DrawingDetailingUsageRecord record)
         {
             try
             {
@@ -31,7 +25,7 @@ namespace DrawingDetailingModule.Services
                 {
                     if (!fileExists)
                     {
-                        writer.WriteLine(ApiUsageRecord.CsvHeader());
+                        writer.WriteLine(DrawingDetailingUsageRecord.CsvHeader());
                     }
 
                     writer.WriteLine(record.ToCsvLine());
@@ -42,23 +36,6 @@ namespace DrawingDetailingModule.Services
                 // Silent fail - don't disrupt main API functionality
                 LogToFallback(record, ex);
             }
-        }
-
-        public void LogError(string apiName, Exception exception)
-        {
-            var record = new ApiUsageRecord
-            {
-                ApiName = apiName,
-                EngineerName = Environment.UserName,
-                Version = GetApiVersion(),
-                UsedTime = DateTime.Now,
-                ComputerName = Environment.MachineName,
-                SessionId = SessionId,
-                Duration = SessionStopwatch.Elapsed,
-                Status = "Error",
-                Message = exception?.Message ?? "Unknown error"
-            };
-            LogUsage(record);
         }
 
         public string GetCsvFilePath(string apiName)
@@ -81,20 +58,7 @@ namespace DrawingDetailingModule.Services
             }
         }
 
-        private string GetApiVersion()
-        {
-            try
-            {
-                var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-                return assembly.GetName().Version?.ToString() ?? "1.1.0.0";
-            }
-            catch
-            {
-                return "1.1.0.0";
-            }
-        }
-
-        private void LogToFallback(ApiUsageRecord record, Exception ex)
+        private void LogToFallback(DrawingDetailingUsageRecord record, Exception ex)
         {
             try
             {
@@ -104,7 +68,6 @@ namespace DrawingDetailingModule.Services
                     $"error-{UsageTrackingConstants.GetCsvFileName(record.ApiName)}");
 
                 EnsureDirectoryExists(fallbackPath);
-
 
                 using (var writer = new StreamWriter(fallbackPath, append: true))
                 {

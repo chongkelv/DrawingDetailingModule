@@ -63,10 +63,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Constants\AttributeNames.cs" />
     <Compile Include="Constants\UsageTrackingConstants.cs" />
     <Compile Include="Controller\Control.cs" />
     <Compile Include="Main\MyProgram.cs" />
-    <Compile Include="Model\ApiUsageRecord.cs" />
+    <Compile Include="Model\DrawingDetailingUsageRecord.cs" />
     <Compile Include="Model\AskBoundingBox.cs" />
     <Compile Include="Model\CounterSunk.cs" />
     <Compile Include="Model\GetBoundingBoxInfo.cs" />
@@ -97,6 +98,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Services\AttributeManagerService.cs" />
     <Compile Include="Services\CsvUsageTrackingService.cs" />
     <Compile Include="Services\IUsageTrackingService.cs" />
     <Compile Include="Services\ProjectInfoService.cs" />

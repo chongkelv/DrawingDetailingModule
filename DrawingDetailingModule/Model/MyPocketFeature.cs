@@ -25,14 +25,20 @@ namespace DrawingDetailingModule.Model
 
         public Feature GetSketchFeat(Feature feature)
         {
-            Feature result = null;
+            // Prefer a real SketchFeature parent first - GetParents() order is not guaranteed to put
+            // the actual profile sketch ahead of other curve-producing dependencies (e.g. an internal
+            // ProjectCurve), so a single pass matching whichever comes first can grab the wrong one.
             foreach (NXObject ent in feature.GetParents())
             {
                 if (ent is SketchFeature)
                 {
                     return (SketchFeature)ent;
                 }
-                else if (ent is WaveSketch)
+            }
+
+            foreach (NXObject ent in feature.GetParents())
+            {
+                if (ent is WaveSketch)
                 {
                     return (WaveSketch)ent;
                 }
@@ -41,7 +47,8 @@ namespace DrawingDetailingModule.Model
                     return (ProjectCurve)ent;
                 }
             }
-            return result;
+
+            return null;
         }
 
         public Point3d calculateMidPoint(Line line)
