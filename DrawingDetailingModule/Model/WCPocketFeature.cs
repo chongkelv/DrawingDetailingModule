@@ -28,12 +28,10 @@ namespace DrawingDetailingModule.Model
         public override string GetProcessAbbrevate() => FeatureFactory.WC;
 
         /// <summary>
-        /// Computes the WC start point by: finding the profile's local bounding-box center (in the
-        /// sketch's own plane, so it works for sketches on angled/tilted planes), casting a ray from
-        /// that center along the sketch's local +X axis, finding the nearest profile-boundary crossing,
-        /// then offsetting that crossing back toward the center by <see cref="WC_START_POINT_OFFSET_MM"/>.
-        /// Works for any curve type (line/arc/circle/spline) since the profile is approximated as a
-        /// polyline via generic curve evaluation, rather than requiring a straight line segment.
+        /// Primary path: find the longest straight line in the profile, offset 3mm perpendicular from
+        /// its midpoint, and use whichever side lands outside the part body (in the pocket cavity).
+        /// Falls back to <see cref="GenerateLocationFromProfileCenter"/> for profiles with no straight
+        /// line (e.g. fully circular/arc/spline profiles), which the primary path cannot handle.
         /// </summary>
         public override List<Point3d> GenerateLocation()
         {
@@ -42,10 +40,107 @@ namespace DrawingDetailingModule.Model
                 throw new Exception("Wirecut Feature Error: The system cannot process the wirecut operation. Please create the Wirecut Profile using a sketch first!");
             }
 
+            Line longestLine = null;
+            double maxLength = 0.0;
+
+            foreach (NXObject ent in sketchFeat.GetEntities())
+            {
+                if (ent is Line)
+                {
+                    Line line = (Line)ent;
+                    double length = CalculateLineLength(line);
+
+                    if (length > maxLength)
+                    {
+                        maxLength = length;
+                        longestLine = line;
+                    }
+                }
+            }
+
+            if (longestLine != null)
+            {
+                return GenerateLocationFromLongestLine(longestLine);
+            }
+
+            return GenerateLocationFromProfileCenter();
+        }
+
+        private List<Point3d> GenerateLocationFromLongestLine(Line longestLine)
+        {
+            Point3d midPoint = calculateMidPoint(longestLine);
+            bool flip = true;
+            Point3d offsetPoint = OffsetPerpendicular(longestLine, midPoint, WC_START_POINT_OFFSET_MM, flip);
+            AskBoundingBox askBounding = new AskBoundingBox(ufs, SelectedBody.Tag);
+            flip = askBounding.IsPointContainInBoundary(offsetPoint, SelectedBody.Tag);
+            if (flip)
+            {
+                offsetPoint = OffsetPerpendicular(longestLine, midPoint, WC_START_POINT_OFFSET_MM, !flip);
+            }
+
+            List<Point3d> points = new List<Point3d> { offsetPoint };
+            wcspBasePoint = points;
+
+            return points;
+        }
+
+        public static Point3d OffsetPerpendicular(Line line, Point3d midPoint, double offsetDistance, bool flip)
+        {
+            // Calculate the direction of the line (normalized vector)
+            Vector3d lineDirection = new Vector3d(
+                line.EndPoint.X - line.StartPoint.X,
+                line.EndPoint.Y - line.StartPoint.Y,
+                line.EndPoint.Z - line.StartPoint.Z
+            );
+
+            // Normalize the line direction vector
+            double length = Math.Sqrt(lineDirection.X * lineDirection.X +
+                                      lineDirection.Y * lineDirection.Y +
+                                      lineDirection.Z * lineDirection.Z);
+
+            lineDirection.X /= length;
+            lineDirection.Y /= length;
+            lineDirection.Z /= length;
+
+            // Calculate a vector perpendicular to the line in 2D (XY plane)
+            Vector3d perpendicularDirection = new Vector3d(-lineDirection.Y, lineDirection.X, 0);
+
+            Point3d offsetPoint;
+            if (flip)
+            {
+                // Offset the midpoint by the perpendicular vector
+                offsetPoint = new Point3d(
+                    midPoint.X - perpendicularDirection.X * offsetDistance,
+                    midPoint.Y - perpendicularDirection.Y * offsetDistance,
+                    midPoint.Z  // Z remains the same (2D sketch assumption)
+                );
+            }
+            else
+            {
+                offsetPoint = new Point3d(
+                    midPoint.X + perpendicularDirection.X * offsetDistance,
+                    midPoint.Y + perpendicularDirection.Y * offsetDistance,
+                    midPoint.Z  // Z remains the same (2D sketch assumption)
+                );
+            }
+
+            return offsetPoint;
+        }
+
+        /// <summary>
+        /// Fallback path for profiles with no straight line: finds the profile's local bounding-box
+        /// center (in the sketch's own plane, so it works for sketches on angled/tilted planes), casts
+        /// a ray from that center along the sketch's local +X axis, finds the nearest profile-boundary
+        /// crossing, then offsets that crossing back toward the center by
+        /// <see cref="WC_START_POINT_OFFSET_MM"/>. Works for any curve type (arc/circle/spline) since
+        /// the profile is approximated as a polyline via generic curve evaluation.
+        /// </summary>
+        private List<Point3d> GenerateLocationFromProfileCenter()
+        {
             SketchFeature realSketchFeat = sketchFeat as SketchFeature;
             if (realSketchFeat == null)
             {
-                throw new Exception($"Wirecut Feature Error: The WC profile's parent \"{sketchFeat.GetFeatureName()}\" is not a sketch (found {sketchFeat.GetType().Name}). The WC start point algorithm requires a true sketch profile.");
+                throw new Exception($"Wirecut Feature Error: The WC profile's parent \"{sketchFeat.GetFeatureName()}\" is not a sketch (found {sketchFeat.GetType().Name}), and no straight line segment was found to compute the WC start point from either. Please add a straight line to the profile, or use a true sketch for the profile.");
             }
 
             string sketchName = sketchFeat.GetFeatureName();
